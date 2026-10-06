@@ -1,4 +1,4 @@
-from os.path import join, sep as s, dirname, expanduser
+from os.path import join, sep as s, dirname
 import os
 from textwrap import dedent
 from itertools import count
@@ -88,16 +88,35 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
     s.complete(line=2, column=4)
 
 
-def test_complete_expanduser(Script):
-    possibilities = os.scandir(expanduser('~'))
-    non_dots = [p for p in possibilities if not p.name.startswith('.') and len(p.name) > 1]
-    item = non_dots[0]
-    line = "'~%s%s'" % (os.sep, item.name)
+def test_complete_expanduser(Script, tmp_path, monkeypatch):
+    monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.setenv('USERPROFILE', str(tmp_path))
+
+    test_file = tmp_path / "test_file.py"
+    test_file.touch()
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+
+    line = "'~%s%s'" % (os.sep, test_file.name)
     s = Script(line)
-    expected_name = item.name
-    if item.is_dir():
-        expected_name += os.path.sep
-    assert expected_name in [c.name for c in s.complete(column=len(line)-1)]
+    assert test_file.name in [c.name for c in s.complete(column=len(line) - 1)]
+
+    dir_line = "'~%s%s'" % (os.sep, test_dir.name)
+    s_dir = Script(dir_line)
+    expected_dir = test_dir.name + os.path.sep
+    assert expected_dir in [c.name for c in s_dir.complete(column=len(dir_line) - 1)]
+
+
+def test_complete_expanduser_dotfiles_only(Script, tmp_path, monkeypatch):
+    monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.setenv('USERPROFILE', str(tmp_path))
+
+    dot_file = tmp_path / ".bashrc"
+    dot_file.touch()
+
+    line = "'~%s.'" % os.sep
+    s = Script(line)
+    assert dot_file.name in [c.name for c in s.complete(column=len(line) - 1)]
 
 
 def test_fake_subnodes(Script):
