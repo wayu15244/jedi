@@ -86,3 +86,19 @@ def broken_f1(value: Tuple[T]) -> Tuple[T]: ...
 tup: Tuple[float]
 #? float()
 broken_f1(broken_f1(tup))[0]
+
+
+# -------------------------
+# @typing.overload
+# -------------------------
+import typing
+
+@typing.overload
+def typing_overload_f(value: list) -> str: ...
+@typing.overload
+def typing_overload_f(value: dict) -> float: ...
+
+#? str()
+typing_overload_f([''])
+#? float()
+typing_overload_f({1.0: 1.0})

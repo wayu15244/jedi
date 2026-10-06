@@ -69,3 +69,20 @@ def test_param_kind_and_name(code, index, param_code, kind, Script):
 def test_staticmethod(Script):
     s, = Script('staticmethod(').get_signatures()
     assert s.to_string() == 'staticmethod(f: Callable[_P, _R_co], /)'
+
+
+@pytest.mark.parametrize('decorator', ['@typing.overload', '@typing_extensions.overload'])
+def test_typing_overload_signatures(Script, decorator):
+    code = (
+        'import typing\n'
+        'import typing_extensions\n'
+        f'{decorator}\n'
+        'def f(x: int) -> int: ...\n'
+        f'{decorator}\n'
+        'def f(x: str) -> str: ...\n'
+        'def f(x):\n'
+        '    return x\n'
+        'f('
+    )
+    sigs = Script(code).get_signatures(line=9, column=2)
+    assert [s.to_string() for s in sigs] == ['f(x: int) -> int', 'f(x: str) -> str']
